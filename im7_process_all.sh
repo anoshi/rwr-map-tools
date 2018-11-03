@@ -1,7 +1,15 @@
 #!/bin/bash
 # 
-# 
+# RELEASE: 0.1.0
+# 3 November, 2018
 #
+# AUTHOR: anoshi (https://github.com/anoshi or you find me in RWR Discord #modding)
+#
+# CREDITS: ImageMagick 'convert' and 'composite' commands used in this script are taken from batch file utilities provided within 'vanilla' maps
+# that ship with Running With Rifles (http://www.runningwithrifiles.com)
+#
+# LICENCE: GNU GENERAL PUBLIC LICENSE V3
+
 # Sanity: Confirm we have the tools for the job and set up ENV vars for future use
 which convert > /dev/null 2>&1
 convert_present=$?
@@ -29,7 +37,7 @@ while [[ "$#" -gt 0 ]]; do
         -a|-al|--alpha|--alpha-layers|-r|--rwr-alpha) alpha_layers="$2 $3 $4 $5"; shift 4;;
         -t|-tl|--terrain|--terrain-layers|-s|--splat) terrain_layers="$2 $3 $4 $5"; shift 4;;
         -f|-fx|-fl|-fxl|--fx|--fx-layers) fx_layers="$2 $3 $4 $5"; shift 4;;
-        /?|-h|--help) printf "\nusage: im7_process_all.sh [--alpha \e[4malpha_layers\e[0m] [--terrain \e[4mterrain_layers\e[0m] [--fx \e[4mfx_layers\e[0m]\n\n"; printf "example: im7_process_all.sh \e[33m-a\e[0m \e[31msand grass asphalt road\e[0m \e[33m-t\e[0m \e[32mrocky_mountain grass sand road\e[0m \e[33m-f\e[0m \e[034mnone alpha_dirtroad blood none_a\e[0m\n\n* Layers must be specified in order from lowest to highest\n* If no arguments are passed, the script will prompt for input\n\n"; exit;;
+        /?|-h|--help) printf "\nusage: im7_process_all.sh [--alpha \e[4malpha_layers\e[0m (x4)] [--terrain \e[4mterrain_layers\e[0m (x4)] [--fx \e[4mfx_layers\e[0m (x4)]\n\n"; printf "example: im7_process_all.sh \e[33m-a\e[0m \e[31msand grass asphalt road\e[0m \e[33m-t\e[0m \e[32mrocky_mountain grass sand road\e[0m \e[33m-f\e[0m \e[034mnone alpha_dirtroad blood none_a\e[0m\n\n* Layers must be specified in order from lowest to highest\n* If no arguments are passed, the script will prompt for input\n\n"; exit;;
         *) echo "Unknown parameter passed: $1"; echo 'see im7_process_all.sh --help for instructions'; exit 1;;
     esac; 
     shift; 
@@ -126,6 +134,7 @@ if [[ $fnf -eq 1 ]]; then
     { printf "\nEnsure the TERRAIN file(s) listed above is present in this map folder, then try this utility again.\n\n" 1>&2 ; exit 1; }
 fi
 
+echo
 echo "Building terrain5_combined_alpha.png from ${terrain[0]}, ${terrain[1]}, ${terrain[2]}, and ${terrain[3]}"
 # Manually hack the convert command's arguments together
 convert \( -colorspace sRGB ${terrain[0]} \) \( -colorspace sRGB ${terrain[1]} \) \( -colorspace sRGB ${terrain[2]} \) \( -colorspace sRGB -negate ${terrain[3]} \) -channel RGBA -combine terrain5_combined_alpha.png
@@ -149,10 +158,7 @@ if [[ -z $fx_layers ]]; then
                     '
                     fx=(`find . -name 'effect_*' ! -name 'effect_combined_alpha.png' | sed 's|^\./||'`)
                     IFS=
-                    while [[ ${#fx[@]} -lt 4 ]]; do
-                        printf '\n\e[33mFewer than four effect files found. Adding effect_none.png at start of list\e[0m\n\n'
-                        fx=(effect_none.png ${fx[@]})
-                    done
+                    echo
                 ;;
             esac
         ;;
@@ -161,6 +167,7 @@ if [[ -z $fx_layers ]]; then
             for layer in $fx_layers; do
             fx+=("effect_$layer.png")
             done
+            echo
         ;;
     esac
 else
@@ -168,6 +175,11 @@ else
     fx+=("effect_$layer.png")
     done
 fi
+
+while [[ ${#fx[@]} -lt 4 ]]; do
+    printf '\e[33mFewer than four effect files found. Adding effect_none.png at start of list\e[0m\n\n'
+    fx=(effect_none.png ${fx[@]})
+done
 
 fnf=0
 count=0
