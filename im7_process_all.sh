@@ -274,8 +274,7 @@ if [[ "${#alpha[@]}" -gt 0 ]]; then
     echo ' vii] objects'
     composite -compose DstOver _map_composed"$count".png _grey_objects.png map.png
 
-    echo
-    printf "\e[32mmap.png has been created\e[0m\n"
+    printf "\n\e[32mmap.png has been created\e[0m\n"
     # tidy up
     rm -f _map*.png
 fi
