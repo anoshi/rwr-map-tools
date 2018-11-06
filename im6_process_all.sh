@@ -283,7 +283,7 @@ if [[ "${#alpha[@]}" -gt 0 ]]; then
         let count=count+1
     fi
 
-    echo ' vii] objects'
+    echo ' viii] objects'
     composite -compose DstOver _map_composed"$count".png _grey_objects.png map.png
 
     printf "\n\e[32mmap.png has been created\e[0m\n"
