@@ -1,5 +1,5 @@
 #!/bin/bash
-# 
+#
 # RELEASE: 0.1.0
 # 3 November, 2018
 #
@@ -13,17 +13,17 @@
 # Sanity: Confirm we have the tools for the job and set up ENV vars for future use
 which convert > /dev/null 2>&1
 convert_present=$?
-if [ $convert_present -ne 0 ]; then 
+if [ $convert_present -ne 0 ]; then
     echo "ImageMagick (https://imagemagick.org) 'convert' must be installed and in the system path before attempting to use this script"
     exit $convert_present;
 fi
 
 which composite > /dev/null 2>&1
 composite_present=$?
-if [ $composite_present -ne 0 ]; then 
+if [ $composite_present -ne 0 ]; then
     echo "ImageMagick (https://imagemagick.org) 'composite' must be installed and in the system path before attempting to use this script";
     exit $composite_present;
-fi 
+fi
 
 export MAGICK_HOME="`which convert | sed 's|/bin/convert||'`"
 export DYLD_LIBRARY_PATH="$MAGICK_HOME/lib"
@@ -32,18 +32,18 @@ export DYLD_LIBRARY_PATH="$MAGICK_HOME/lib"
 scriptdir=`dirname "$0"`
 
 # Deal with arguments passed to the script (must be passed four alpha, terrain, and/or fx layers or script explodes)
-while [[ "$#" -gt 0 ]]; do 
+while [[ "$#" -gt 0 ]]; do
     case $1 in
         -a|-al|--alpha|--alpha-layers|-r|--rwr-alpha) alpha_layers="$2 $3 $4 $5"; shift 4;;
         -t|-tl|--terrain|--terrain-layers|-s|--splat) terrain_layers="$2 $3 $4 $5"; shift 4;;
         -f|-fx|-fl|-fxl|--fx|--fx-layers) fx_layers="$2 $3 $4 $5"; shift 4;;
         /?|-h|--help) printf "\nusage: im7_process_all.sh [--alpha \e[4malpha_layers\e[0m (x4)] [--terrain \e[4mterrain_layers\e[0m (x4)] [--fx \e[4mfx_layers\e[0m (x4)]\n\n"; printf "example: im7_process_all.sh \e[33m-a\e[0m \e[31msand grass asphalt road\e[0m \e[33m-t\e[0m \e[32mrocky_mountain grass sand road\e[0m \e[33m-f\e[0m \e[034mnone alpha_dirtroad blood none_a\e[0m\n\n* Layers must be specified in order from lowest to highest\n* If no arguments are passed, the script will prompt for input\n\n"; exit;;
         *) echo "Unknown parameter passed: $1"; exit 1;;
-    esac; 
-    shift; 
+    esac;
+    shift;
 done
 
-if [[ -z $alpha_layers ]]; then 
+if [[ -z $alpha_layers ]]; then
     read -p "Are you wanting to process layers exported via the rwr_export tool in inkscape [yes/NO]? " do_rwr
     case ${do_rwr:0:1} in
         y|Y|yes|YES )
@@ -67,7 +67,7 @@ count=0 # iterate through array
 while [ $count -lt "${#alpha[@]}" ]; do
     if [[ ! -e "${alpha[$count]}" ]]; then
         printf "\e[31m${alpha[$count]} is not present\e[0m\n"; fnf=1
-    else 
+    else
         out=`echo "${alpha[$count]}" | sed "s/_rwr_/terrain5_/"`
         if [[ "${alpha[$count]}" == road* || "${alpha[$count]}" == asphalt* ]]; then
             convert "${alpha[$count]}" -alpha extract -depth 8 -gaussian-blur 2x2 "$out"
@@ -82,7 +82,7 @@ while [ $count -lt "${#alpha[@]}" ]; do
     let count=count+1
 done
 if [[ $fnf -eq 1 ]]; then
-    { printf "\nEnsure the ALPHA layer(s) listed above is present and named accordingly in your Inkscape project, run the rwr_exporter, then try this utility again.\n\n" 1>&2 ; exit 1; }
+    { printf "\nEnsure the ALPHA layer(s) listed above is present and named accordingly in your Inkscape project, run the rwr_exporter, then try this utility again.\e[0m\n\n" 1>&2 ; exit 1; }
 fi
 
 printf "\n2) \e[4mOne-pass terrain optimisation\e[0m: merge generated terrain splat files into one (max: 4)\n\n"
@@ -119,7 +119,7 @@ if [[ -z $terrain_layers ]]; then
 else
     for layer in $terrain_layers; do
         terrain+=("terrain5_alpha_$layer.png")
-    done    
+    done
 fi
 
 fnf=0
@@ -131,7 +131,7 @@ while [ $count -lt "${#terrain[@]}" ]; do
     let count=count+1
 done
 if [[ $fnf -eq 1 ]]; then
-    { printf "\nEnsure the TERRAIN file(s) listed above is present in this map folder, then try this utility again.\n\n" 1>&2 ; exit 1; }
+    { printf "\nEnsure the TERRAIN file(s) listed above is present in this map folder, then try this utility again.\e[0m\n\n" 1>&2 ; exit 1; }
 fi
 
 echo
@@ -150,7 +150,7 @@ if [[ -z $fx_layers ]]; then
             read -p "Allow script to use best-guess defaults [YES/no]? " default_fx
             case ${default_fx:0:1} in
                 n|N|No|NO)
-                    break;
+                    no_fx=1
                 ;;
                 * )
                     # Temp set Internal Field Separator to newline in order to populate local vars from find's multi-line output
@@ -176,21 +176,23 @@ else
     done
 fi
 
-while [[ ${#fx[@]} -lt 4 ]]; do
-    printf '\e[33mFewer than four effect files found. Adding effect_none.png at start of list\e[0m\n\n'
-    fx=(effect_none.png ${fx[@]})
-done
+if [[ $no_fx -ne 1 ]]; then
+    while [[ ${#fx[@]} -lt 4 ]]; do
+        printf '\e[33mFewer than four effect files found. Adding effect_none.png at start of list\e[0m\n\n'
+        fx=(effect_none.png ${fx[@]})
+    done
+fi
 
 fnf=0
 count=0
 while [ $count -lt "${#fx[@]}" ]; do
     if [[ ! -e "${fx[$count]}" ]]; then
-        printf "\e[31m${fx[$count]} is not present\e]0m\n"; fnf=1
+        printf "\e[31m${fx[$count]} is not present\e[0m\n"; fnf=1
     fi
     let count=count+1
 done
 if [[ $fnf -eq 1 ]]; then
-    { printf "\nEnsure the EFFECT file(s) listed above is present in this map folder, then try this utility again.\n\n" 1>&2 ; exit 1; }
+    { printf "\nEnsure the EFFECT file(s) listed above is present in this map folder, then try this utility again.\e[0m\n\n" 1>&2 ; exit 1; }
 fi
 
 if [[ "${#fx[@]}" -eq 0 ]]; then
@@ -261,7 +263,7 @@ if [[ "${#alpha[@]}" -gt 0 ]]; then
     if [[ ! -e _rwr_alpha_road.png ]]; then
         printf "\e[33mNo roads. Skipping\n\e[0m\n"
     else
-        convert _rwr_alpha_road.png -alpha extract -depth 8 _map_road_mask.png 
+        convert _rwr_alpha_road.png -alpha extract -depth 8 _map_road_mask.png
         convert _map_composed"$count".png map_view_tile_road.png _map_road_mask.png -composite _map_composed"$(($count+1))".png
         let count=count+1
     fi
@@ -278,7 +280,7 @@ if [[ "${#alpha[@]}" -gt 0 ]]; then
     if [[ ! -e _rwr_alpha_dirtroad.png ]]; then
         printf "\e[33mNo dirt roads. Skipping\e[0m\n"
     else
-        convert _rwr_alpha_dirtroad.png -alpha extract -depth 8 _map_dirtroad_mask.png 
+        convert _rwr_alpha_dirtroad.png -alpha extract -depth 8 _map_dirtroad_mask.png
         convert _map_composed"$count".png map_view_tile_dirtroad.png _map_dirtroad_mask.png -composite _map_composed"$(($count+1))".png
         let count=count+1
     fi
