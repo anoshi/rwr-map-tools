@@ -196,7 +196,7 @@ if [[ $fnf -eq 1 ]]; then
 fi
 
 if [[ "${#fx[@]}" -eq 0 ]]; then
-    echo "No effects layers to process"
+    printf "\n\e[33mNo effects layers to process. Skipping\e[0m\n\n";
 else
     echo "Processing effects layers: ${fx[@]}"
     convert -colorspace RGB ${fx[0]} -colorspace RGB ${fx[1]} -colorspace RGB ${fx[2]} -colorspace RGB ${fx[3]} -channel RGBA -combine -colorspace RGB PNG32:effect_combined_alpha.png
@@ -204,8 +204,8 @@ else
 fi
 
 if [[ "${#alpha[@]}" -gt 0 ]]; then
-    echo '4) Create heightmap from to 513x513 pixels, 8-bit greyscale'
-    convert _rwr_height.png -type Grayscale -resize 513x513 -depth 8 terrain5_heightmap.png
+    echo '4) Create heightmap from to 1025x1025 pixels, 8-bit greyscale'
+    convert _rwr_height.png -type Grayscale -resize 1025x1025 -depth 8 terrain5_heightmap.png
 
     echo '5) Convert map_view to 512x512, output initial map.png'
     convert _rwr_map_view.png -resize 512x512 -modulate 100,0 map.png
