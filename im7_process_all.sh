@@ -1,5 +1,8 @@
 #!/bin/bash
 #
+# RELEASE: 0.2.0 (added -hm --heightmap flags)
+# 17 July, 2020
+#
 # RELEASE: 0.1.0
 # 3 November, 2018
 #
@@ -37,7 +40,8 @@ while [[ "$#" -gt 0 ]]; do
         -a|-al|--alpha|--alpha-layers|-r|--rwr-alpha) alpha_layers="$2 $3 $4 $5"; shift 4;;
         -t|-tl|--terrain|--terrain-layers|-s|--splat) terrain_layers="$2 $3 $4 $5"; shift 4;;
         -f|-fx|-fl|-fxl|--fx|--fx-layers) fx_layers="$2 $3 $4 $5"; shift 4;;
-        /?|-h|--help) printf "\nusage: im7_process_all.sh [--alpha \e[4malpha_layers\e[0m (x4)] [--terrain \e[4mterrain_layers\e[0m (x4)] [--fx \e[4mfx_layers\e[0m (x4)]\n\n"; printf "example: im7_process_all.sh \e[33m-a\e[0m \e[31msand grass asphalt road\e[0m \e[33m-t\e[0m \e[32mrocky_mountain grass sand road\e[0m \e[33m-f\e[0m \e[034mnone alpha_dirtroad blood none_a\e[0m\n\n* Layers must be specified in order from lowest to highest\n* If no arguments are passed, the script will prompt for input\n\n"; exit;;
+        -hm|--heightmap) heightmap_px="$2"; shift 1;;
+        /?|-h|--help) printf "\nusage: im7_process_all.sh [--alpha \e[4malpha_layers\e[0m (x4)] [--terrain \e[4mterrain_layers\e[0m (x4)] [--fx \e[4mfx_layers\e[0m (x4)] [--heightmap \e[4mheightmap_pixels\e[0m]\n\n"; printf "example: im7_process_all.sh \e[33m-a\e[0m \e[31msand grass asphalt road\e[0m \e[33m-t\e[0m \e[32mrocky_mountain grass sand road\e[0m \e[33m-f\e[0m \e[034mnone alpha_dirtroad blood none_a\e[0m \e[33m-hm\e[0m \e[035m1025\e[0m\n\n* Layers must be specified in order from lowest to highest\n* If no arguments are passed, the script will prompt for input\n\n"; exit;;
         *) echo "Unknown parameter passed: $1"; echo 'see im7_process_all.sh --help for instructions'; exit 1;;
     esac;
     shift;
@@ -196,7 +200,7 @@ if [[ $fnf -eq 1 ]]; then
 fi
 
 if [[ "${#fx[@]}" -eq 0 ]]; then
-    echo "No effects layers to process"
+    printf "\n\e[33mNo effects layers to process. Skipping\e[0m\n\n";
 else
     echo "Processing effects layers: ${fx[@]}"
     convert \( -colorspace sRGB ${fx[0]} \) \( -colorspace sRGB ${fx[1]}  \) \( -colorspace sRGB ${fx[2]} \) \( -colorspace sRGB -negate ${fx[3]} \) -channel RGBA -combine -colorspace sRGB PNG32:effect_combined_alpha.png
@@ -204,10 +208,13 @@ else
 fi
 
 if [[ "${#alpha[@]}" -gt 0 ]]; then
-    echo '4) Create heightmap from to 513x513 pixels, 8-bit greyscale'
-    convert _rwr_height.png -type Grayscale -resize 513x513 -depth 8 terrain5_heightmap.png
+    if [[ -z $heightmap_px ]]; then
+        heightmap_px=513;
+    fi
+    echo "4) Convert heightmap to $heightmap_px x $heightmap_px pixels, 8-bit greyscale"
+    convert _rwr_height.png -type Grayscale -resize "$heightmap_px"x"$heightmap_px" -depth 8 terrain5_heightmap.png
 
-    echo '5) Convert map_view to 512x512, output initial map.png'
+    echo '5) Convert map_view to 512 x 512, output initial map.png'
     convert _rwr_map_view.png -resize 512x512 -modulate 100,0 map.png
 
     echo '6) Prepare map view'
